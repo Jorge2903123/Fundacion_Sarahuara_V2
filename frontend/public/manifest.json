@@ -1,0 +1,23 @@
+{
+  "name": "Fundación Sarahuaro",
+  "short_name": "Sarahuaro",
+  "description": "Sistema de gestión para el comedor infantil Fundación Sarahuaro",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8f4f1",
+  "theme_color": "#e67e22",
+  "orientation": "portrait-primary",
+  "lang": "es-MX",
+  "icons": [
+    {
+      "src": "/sarahuaro-logo.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "/sarahuaro-logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}
