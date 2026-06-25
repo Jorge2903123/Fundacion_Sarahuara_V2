@@ -1,7 +1,11 @@
 import axios from 'axios'
 
+const API_BASE = import.meta.env.PROD
+  ? 'https://endearing-liberation-production-822c.up.railway.app'
+  : '/api'
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL: API_BASE,
 })
 
 api.interceptors.request.use((config) => {
