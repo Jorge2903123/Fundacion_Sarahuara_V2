@@ -10,7 +10,7 @@ logging.basicConfig(
 
 app = FastAPI(title="Fundacion Sarahuaro API")
 
-cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
+cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:5173,https://nurturing-strength-production-4456.up.railway.app").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
