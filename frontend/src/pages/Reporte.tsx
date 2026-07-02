@@ -61,13 +61,15 @@ export default function Reporte() {
   const [anio, setAnio] = useState(anioActual)
   const [costo, setCosto] = useState('')
   const [reporte, setReporte] = useState<ReporteData | null>(null)
-  const [hoy] = useState(formatDate(new Date()))
+  const hoy = new Date()
+  const ultimoDiaMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0)
+  const fechaMax = formatDate(ultimoDiaMes)
   const [inicio, setInicio] = useState(() => {
     const d = new Date()
     d.setDate(1)
     return formatDate(d)
   })
-  const [fin, setFin] = useState(hoy)
+  const [fin, setFin] = useState(fechaMax)
   const [reporteRango, setReporteRango] = useState<ReporteRango | null>(null)
   const [comparar, setComparar] = useState(false)
   const [reporteComparar, setReporteComparar] = useState<ReporteRango | null>(null)
@@ -86,6 +88,10 @@ export default function Reporte() {
     const val = parseFloat(costo)
     if (!costo || isNaN(val) || val < 0) {
       setError('Ingresa un costo válido mayor o igual a 0')
+      return
+    }
+    if (val > 999999.99) {
+      setError('El costo máximo es 999,999.99')
       return
     }
     try {
@@ -216,10 +222,10 @@ export default function Reporte() {
         metrics.push({ label: 'Donativos del período', value: `$${data.donativos_periodo.toFixed(2)}`, color: '#27ae60' })
 
         // draw metric cards in 2-column grid
-        const cardW = (pw - m * 2 - 6) / 2
-        const cardH = 22
-        const gapX = 6
-        const gapY = 5
+        const cardW = (pw - m * 2 - 8) / 2
+        const cardH = 28
+        const gapX = 8
+        const gapY = 8
 
         for (let i = 0; i < metrics.length; i++) {
           const col = i % 2
@@ -230,7 +236,7 @@ export default function Reporte() {
           // card bg
           pdf.setFillColor(248, 248, 248)
           pdf.setDrawColor(220, 220, 220)
-          pdf.roundedRect(cx, cy, cardW, cardH, 2, 2, 'FD')
+          pdf.roundedRect(cx, cy, cardW, cardH, 3, 3, 'FD')
 
           // left accent bar
           pdf.setFillColor(metrics[i].color)
@@ -239,17 +245,17 @@ export default function Reporte() {
           // value
           pdf.setFontSize(16)
           pdf.setTextColor(50)
-          pdf.text(metrics[i].value, cx + 10, cy + 16)
+          pdf.text(metrics[i].value, cx + 12, cy + 20)
 
           // label
           pdf.setFontSize(8)
           pdf.setTextColor(140)
-          pdf.text(metrics[i].label, cx + 10, cy + 8)
+          pdf.text(metrics[i].label, cx + 12, cy + 10)
         }
 
         // --- comparison table ---
         if (comparar && reporteComparar) {
-          const tableY = y + Math.ceil(metrics.length / 2) * (cardH + gapY) + 10
+          const tableY = y + Math.ceil(metrics.length / 2) * (cardH + gapY) + 14
           const f1a = new Date(reporteComparar.inicio + 'T12:00:00').toLocaleDateString('es-MX')
           const f2a = new Date(reporteComparar.fin + 'T12:00:00').toLocaleDateString('es-MX')
 
@@ -311,41 +317,35 @@ export default function Reporte() {
 
     const esc = (v: string) => `"${v.replace(/"/g, '""')}"`
     const lines: string[] = []
-    lines.push('Fundación Sarahuaro,Reporte de Impacto')
-    lines.push(`Generado,${new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}`)
-    lines.push('')
+    const genDate = new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })
+    lines.push(`"Fundación Sarahuaro","Reporte de Impacto"`)
+    lines.push(`"Generado","${genDate}"`)
 
     if ('mes' in data) {
       const nm = meses.find((m) => m.value === data.mes)?.label
-      lines.push(`Período,${esc(`${nm} ${data.anio}`)}`)
+      lines.push(`"Período","${nm} ${data.anio}"`)
     } else {
-      lines.push(`Fecha inicio,${data.inicio}`)
-      lines.push(`Fecha fin,${data.fin}`)
+      lines.push(`"Período","${data.inicio} al ${data.fin}"`)
     }
-    lines.push('')
 
-    lines.push('Indicador,Valor')
-    lines.push(`Niños atendidos,${data.total_ninos_atendidos}`)
-    lines.push(`Total comidas,${data.total_asistencias}`)
+    lines.push(`"Indicador","Valor"`)
+    lines.push(`"Niños atendidos","${data.total_ninos_atendidos}"`)
+    lines.push(`"Total comidas","${data.total_asistencias}"`)
     if ('promedio_diario' in data) {
-      lines.push(`Promedio diario,${(data as ReporteRango).promedio_diario}`)
-      lines.push(`Días laborales,${(data as ReporteRango).dias_laborales}`)
-      lines.push(`Días del período,${(data as ReporteRango).dias_transcurridos}`)
+      lines.push(`"Promedio diario","${(data as ReporteRango).promedio_diario}"`)
+      lines.push(`"Días laborales","${(data as ReporteRango).dias_laborales}"`)
+      lines.push(`"Días del período","${(data as ReporteRango).dias_transcurridos}"`)
     }
     if ('costo_total' in data) {
-      lines.push('')
-      lines.push(',,,Costos')
-      lines.push(`Costo total,$${(data as ReporteData).costo_total.toFixed(2)}`)
-      lines.push(`Costo por niño,$${(data as ReporteData).costo_por_nino.toFixed(2)}`)
-      lines.push(`Costo por comida,$${(data as ReporteData).costo_por_comida.toFixed(2)}`)
+      lines.push(`"Costo total","$${(data as ReporteData).costo_total.toFixed(2)}"`)
+      lines.push(`"Costo por niño","$${(data as ReporteData).costo_por_nino.toFixed(2)}"`)
+      lines.push(`"Costo por comida","$${(data as ReporteData).costo_por_comida.toFixed(2)}"`)
     }
-    lines.push('')
-    lines.push(`Donativos del período,$${data.donativos_periodo.toFixed(2)}`)
+    lines.push(`"Donativos del período","$${data.donativos_periodo.toFixed(2)}"`)
 
     if (comparar && reporteComparar) {
-      lines.push('')
-      lines.push(',,,Comparación con período anterior')
-      lines.push('Indicador,Actual,Anterior,Cambio')
+      lines.push(`"--- Comparación con período anterior ---"`)
+      lines.push(`"Indicador","Actual","Anterior","Cambio"`)
       const addRow = (label: string, actual: number, anterior: number, esDinero = false) => {
         const diff = actual - anterior
         const pct = anterior > 0 ? ((diff / anterior) * 100).toFixed(1) : '+∞'
@@ -353,7 +353,7 @@ export default function Reporte() {
         const fmtActual = esDinero ? `$${actual.toFixed(2)}` : String(actual)
         const fmtAnt = esDinero ? `$${anterior.toFixed(2)}` : String(anterior)
         const fmtDiff = esDinero ? `${signo}$${diff.toFixed(2)} (${pct}%)` : `${signo}${diff} (${pct}%)`
-        lines.push(`${esc(label)},${fmtActual},${fmtAnt},${fmtDiff}`)
+        lines.push(`"${label}","${fmtActual}","${fmtAnt}","${fmtDiff}"`)
       }
       addRow('Niños atendidos', reporteRango.total_ninos_atendidos, reporteComparar.total_ninos_atendidos)
       addRow('Total comidas', reporteRango.total_asistencias, reporteComparar.total_asistencias)
@@ -361,7 +361,7 @@ export default function Reporte() {
     }
 
     const bom = '\uFEFF'
-    const csv = bom + lines.join('\n')
+    const csv = bom + lines.join('\r\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
@@ -422,6 +422,8 @@ export default function Reporte() {
               <input
                 type="number"
                 step="0.01"
+                min="0"
+                max="999999.99"
                 className="form-control"
                 placeholder="0.00"
                 value={costo}
@@ -468,7 +470,7 @@ export default function Reporte() {
                 className="form-control"
                 value={inicio}
                 onChange={(e) => setInicio(e.target.value)}
-                max={hoy}
+                max={fechaMax}
               />
             </div>
             <div className="form-group">
@@ -478,7 +480,7 @@ export default function Reporte() {
                 className="form-control"
                 value={fin}
                 onChange={(e) => setFin(e.target.value)}
-                max={hoy}
+                max={fechaMax}
               />
             </div>
             <div className="form-group" style={{ justifyContent: 'center' }}>
