@@ -93,32 +93,31 @@ def historial_nino(nino_id: int, admin: dict = Depends(get_admin_user)):
 
             # --- Absences: weekdays without attendance in last 30 days ---
             treinta_atras = hoy - timedelta(days=30)
-            cur.execute("""
-                WITH RECURSIVE fechas AS (
-                    SELECT %s AS dt
-                    UNION ALL
-                    SELECT dt + INTERVAL 1 DAY FROM fechas WHERE dt < %s
-                )
-                SELECT dt FROM fechas
-                WHERE WEEKDAY(dt) < 5
-                  AND dt NOT IN (SELECT fecha FROM asistencias WHERE nino_id = %s)
-                ORDER BY dt DESC
-                LIMIT 10
-            """, (treinta_atras, hoy, nino_id))
-            ausencias_recientes = [row["dt"].isoformat() for row in cur.fetchall()]
+            cur.execute(
+                "SELECT DISTINCT fecha FROM asistencias WHERE nino_id = %s AND fecha >= %s",
+                (nino_id, treinta_atras),
+            )
+            asistencias_set = set()
+            for row in cur.fetchall():
+                f = row["fecha"]
+                asistencias_set.add(f.isoformat() if isinstance(f, date) else f)
+
+            ausencias_recientes = []
+            dt = hoy
+            while dt >= treinta_atras:
+                if dt.weekday() < 5:
+                    fs = dt.isoformat()
+                    if fs not in asistencias_set:
+                        ausencias_recientes.append(fs)
+                dt -= timedelta(days=1)
+            ausencias_recientes.sort(reverse=True)
+            ausencias_recientes = ausencias_recientes[:10]
 
             # total weekdays this month
-            ultimo_dia_mes = hoy.replace(day=calendar.monthrange(hoy.year, hoy.month)[1])
-            cur.execute("""
-                WITH RECURSIVE fechas AS (
-                    SELECT %s AS dt
-                    UNION ALL
-                    SELECT dt + INTERVAL 1 DAY FROM fechas WHERE dt < %s
-                )
-                SELECT COUNT(*) AS total FROM fechas
-                WHERE WEEKDAY(dt) < 5
-            """, (primer_dia_mes, ultimo_dia_mes + timedelta(days=1)))
-            total_dias_habiles_mes = cur.fetchone()["total"]
+            total_dias_habiles_mes = sum(
+                1 for d in range(1, calendar.monthrange(hoy.year, hoy.month)[1] + 1)
+                if date(hoy.year, hoy.month, d).weekday() < 5
+            )
             ausencias_este_mes = total_dias_habiles_mes - asistencias_este_mes
 
             return {
