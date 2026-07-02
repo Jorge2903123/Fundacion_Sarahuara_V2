@@ -164,10 +164,11 @@ export default function Asistencia() {
                 <button
                   className="nino-card-perfil"
                   onClick={(e) => { e.stopPropagation(); navigate(`/ninos/${nino.id}`) }}
-                  title="Ver perfil"
+                  title="Ver alergias y perfil"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="3"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
                   </svg>
                 </button>
               </div>
