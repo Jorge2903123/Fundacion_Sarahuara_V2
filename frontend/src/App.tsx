@@ -16,6 +16,7 @@ const Usuarios = lazy(() => import('./pages/Usuarios'))
 const Donativos = lazy(() => import('./pages/Donativos'))
 const Auditoria = lazy(() => import('./pages/Auditoria'))
 const Familiares = lazy(() => import('./pages/Familiares'))
+const PerfilNino = lazy(() => import('./pages/PerfilNino'))
 
 function PageLoading() {
   return (
@@ -38,6 +39,8 @@ function ProtectedLayout() {
             <Routes>
               <Route path="/" element={<Navigate to="/asistencia" replace />} />
               <Route path="/asistencia" element={<Asistencia />} />
+              <Route path="/historial" element={<Historial />} />
+              <Route path="/ninos/:id" element={<PerfilNino />} />
               <Route path="*" element={<Navigate to="/asistencia" replace />} />
             </Routes>
           </Suspense>
@@ -62,6 +65,7 @@ function ProtectedLayout() {
             <Route path="/donativos" element={<AdminRoute><Donativos /></AdminRoute>} />
             <Route path="/auditoria" element={<AdminRoute><Auditoria /></AdminRoute>} />
             <Route path="/familiares" element={<AdminRoute><Familiares /></AdminRoute>} />
+            <Route path="/ninos/:id" element={<PerfilNino />} />
             <Route path="*" element={<Navigate to="/asistencia" replace />} />
           </Routes>
         </Suspense>

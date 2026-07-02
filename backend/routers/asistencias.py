@@ -4,7 +4,7 @@ from datetime import date, timedelta
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Header
 from database import get_db
-from auth import get_current_user, get_admin_user, _log_auditoria
+from auth import get_current_user, get_admin_user, get_any_user, _log_auditoria
 from models import AsistenciaCreate
 
 log = logging.getLogger("sarahuaro")
@@ -52,7 +52,7 @@ def asistencias_hoy(current_user: dict = Depends(get_current_user)):
 
 
 @router.get("/ninos/{nino_id}/historial")
-def historial_nino(nino_id: int, admin: dict = Depends(get_admin_user)):
+def historial_nino(nino_id: int, user: dict = Depends(get_any_user)):
     conn = get_db()
     try:
         with conn.cursor() as cur:

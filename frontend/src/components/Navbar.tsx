@@ -126,7 +126,7 @@ export default function Navbar() {
 
   const visibleLinks = isAdmin
     ? links
-    : links.filter((l) => l.to === '/asistencia')
+    : links.filter((l) => l.to === '/asistencia' || l.to === '/historial')
 
   return (
     <>

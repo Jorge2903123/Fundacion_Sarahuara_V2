@@ -79,6 +79,12 @@ async def get_admin_user(current_user: dict = Depends(get_current_user)):
     return current_user
 
 
+async def get_any_user(current_user: dict = Depends(get_current_user)):
+    if current_user["rol"] not in ("admin", "voluntario"):
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+    return current_user
+
+
 def _check_rate_limit(ip: str):
     now = time.time()
     window_start = now - RATE_LIMIT_WINDOW

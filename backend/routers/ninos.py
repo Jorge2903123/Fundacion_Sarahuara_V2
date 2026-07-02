@@ -1,7 +1,7 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException
 from database import get_db
-from auth import get_current_user, get_admin_user, _log_auditoria
+from auth import get_current_user, get_admin_user, get_any_user, _log_auditoria
 from models import NinoCreate, NinoUpdate
 
 log = logging.getLogger("sarahuaro")
@@ -40,6 +40,26 @@ def listar_ninos(current_user: dict = Depends(get_current_user)):
                 if isinstance(row.get("fecha_nacimiento"), date):
                     row["fecha_nacimiento"] = row["fecha_nacimiento"].isoformat()
             return rows
+    finally:
+        conn.close()
+
+
+@router.get("/ninos/{nino_id}")
+def obtener_nino(nino_id: int, user: dict = Depends(get_any_user)):
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT id, nombre, apellido, fecha_nacimiento, alergias, observaciones FROM ninos WHERE id = %s AND activo = 1",
+                (nino_id,),
+            )
+            nino = cur.fetchone()
+            if not nino:
+                raise HTTPException(status_code=404, detail="Niño no encontrado")
+            from datetime import date
+            if isinstance(nino.get("fecha_nacimiento"), date):
+                nino["fecha_nacimiento"] = nino["fecha_nacimiento"].isoformat()
+            return nino
     finally:
         conn.close()
 
