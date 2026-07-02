@@ -156,7 +156,7 @@ export default function Reporte() {
         )
       }
 
-      // --- logo ---
+      // --- logo row ---
       try {
         const resp = await fetch('/sarahuaro-logo.jpg')
         const blob = await resp.blob()
@@ -165,30 +165,30 @@ export default function Reporte() {
           r.onload = () => resolve(r.result as string)
           r.readAsDataURL(blob)
         })
-        pdf.addImage(dataUrl, 'JPEG', m, y - 2, 14, 14)
+        pdf.addImage(dataUrl, 'JPEG', m, y, 14, 14)
         pdf.setFontSize(18)
         pdf.setTextColor(230, 126, 34)
-        pdf.text('Fundación Sarahuaro', 40, y + 4)
+        pdf.text('Fundación Sarahuaro', 40, y + 10)
       } catch {
         pdf.setFontSize(18)
         pdf.setTextColor(230, 126, 34)
-        pdf.text('Fundación Sarahuaro', m, y + 4)
+        pdf.text('Fundación Sarahuaro', m, y + 10)
       }
+      y += 18
 
       // --- title ---
       pdf.setFontSize(13)
       pdf.setTextColor(80)
-      const titleY = 22
-      pdf.text('Reporte de Impacto', m, titleY)
+      pdf.text('Reporte de Impacto', m, y)
+      y += 5
 
       // --- divider ---
-      y = titleY + 4
       pdf.setDrawColor(230, 126, 34)
       pdf.setLineWidth(0.4)
       pdf.line(m, y, pw - m, y)
+      y += 7
 
       // --- period & date ---
-      y += 7
       pdf.setFontSize(9)
       pdf.setTextColor(100)
       if (reporte) {
@@ -199,7 +199,7 @@ export default function Reporte() {
         const f2 = new Date(reporteRango.fin + 'T12:00:00').toLocaleDateString('es-MX')
         pdf.text(`Período: ${f1} al ${f2}`, m, y)
       }
-      y += 4
+      y += 5
       pdf.text(`Generado: ${new Date().toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`, m, y)
 
       // --- metrics ---
