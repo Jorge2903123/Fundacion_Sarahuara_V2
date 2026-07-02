@@ -83,7 +83,7 @@
   border-left: 2px solid var(--border-color);
   background: none;
   cursor: pointer;
-  color: var(--gray-400);
+  color: var(--gray-600);
   transition: all var(--transition);
 }
 
