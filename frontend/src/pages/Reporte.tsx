@@ -54,6 +54,9 @@ function formatDate(d: Date): string {
   return d.toISOString().split('T')[0]
 }
 
+const fmt = (n: number) => n.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+const fmtInt = (n: number) => n.toLocaleString('es-MX')
+
 export default function Reporte() {
   const reporteRef = useRef<HTMLDivElement>(null)
   const [modo, setModo] = useState<ModoReporte>('mensual')
@@ -317,43 +320,44 @@ export default function Reporte() {
 
     const esc = (v: string) => `"${v.replace(/"/g, '""')}"`
     const lines: string[] = []
+    const sep = ';'
     const genDate = new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })
-    lines.push(`"Fundación Sarahuaro","Reporte de Impacto"`)
-    lines.push(`"Generado","${genDate}"`)
+    lines.push(`"Fundación Sarahuaro"${sep}"Reporte de Impacto"`)
+    lines.push(`"Generado"${sep}"${genDate}"`)
 
     if ('mes' in data) {
       const nm = meses.find((m) => m.value === data.mes)?.label
-      lines.push(`"Período","${nm} ${data.anio}"`)
+      lines.push(`"Período"${sep}"${nm} ${data.anio}"`)
     } else {
-      lines.push(`"Período","${data.inicio} al ${data.fin}"`)
+      lines.push(`"Período"${sep}"${data.inicio} al ${data.fin}"`)
     }
 
-    lines.push(`"Indicador","Valor"`)
-    lines.push(`"Niños atendidos","${data.total_ninos_atendidos}"`)
-    lines.push(`"Total comidas","${data.total_asistencias}"`)
+    lines.push(`"Indicador"${sep}"Valor"`)
+    lines.push(`"Niños atendidos"${sep}"${data.total_ninos_atendidos}"`)
+    lines.push(`"Total comidas"${sep}"${data.total_asistencias}"`)
     if ('promedio_diario' in data) {
-      lines.push(`"Promedio diario","${(data as ReporteRango).promedio_diario}"`)
-      lines.push(`"Días laborales","${(data as ReporteRango).dias_laborales}"`)
-      lines.push(`"Días del período","${(data as ReporteRango).dias_transcurridos}"`)
+      lines.push(`"Promedio diario"${sep}"${(data as ReporteRango).promedio_diario}"`)
+      lines.push(`"Días laborales"${sep}"${(data as ReporteRango).dias_laborales}"`)
+      lines.push(`"Días del período"${sep}"${(data as ReporteRango).dias_transcurridos}"`)
     }
     if ('costo_total' in data) {
-      lines.push(`"Costo total","$${(data as ReporteData).costo_total.toFixed(2)}"`)
-      lines.push(`"Costo por niño","$${(data as ReporteData).costo_por_nino.toFixed(2)}"`)
-      lines.push(`"Costo por comida","$${(data as ReporteData).costo_por_comida.toFixed(2)}"`)
+      lines.push(`"Costo total"${sep}"$${fmt((data as ReporteData).costo_total)}"`)
+      lines.push(`"Costo por niño"${sep}"$${fmt((data as ReporteData).costo_por_nino)}"`)
+      lines.push(`"Costo por comida"${sep}"$${fmt((data as ReporteData).costo_por_comida)}"`)
     }
-    lines.push(`"Donativos del período","$${data.donativos_periodo.toFixed(2)}"`)
+    lines.push(`"Donativos del período"${sep}"$${fmt(data.donativos_periodo)}"`)
 
     if (comparar && reporteComparar) {
       lines.push(`"--- Comparación con período anterior ---"`)
-      lines.push(`"Indicador","Actual","Anterior","Cambio"`)
+      lines.push(`"Indicador"${sep}"Actual"${sep}"Anterior"${sep}"Cambio"`)
       const addRow = (label: string, actual: number, anterior: number, esDinero = false) => {
         const diff = actual - anterior
         const pct = anterior > 0 ? ((diff / anterior) * 100).toFixed(1) : '+∞'
         const signo = diff > 0 ? '+' : ''
-        const fmtActual = esDinero ? `$${actual.toFixed(2)}` : String(actual)
-        const fmtAnt = esDinero ? `$${anterior.toFixed(2)}` : String(anterior)
-        const fmtDiff = esDinero ? `${signo}$${diff.toFixed(2)} (${pct}%)` : `${signo}${diff} (${pct}%)`
-        lines.push(`"${label}","${fmtActual}","${fmtAnt}","${fmtDiff}"`)
+        const va = esDinero ? `$${fmt(actual)}` : fmtInt(actual)
+        const vb = esDinero ? `$${fmt(anterior)}` : fmtInt(anterior)
+        const vc = esDinero ? `${signo}$${fmt(diff)} (${pct}%)` : `${signo}${fmtInt(diff)} (${pct}%)`
+        lines.push(`"${label}"${sep}"${va}"${sep}"${vb}"${sep}"${vc}"`)
       }
       addRow('Niños atendidos', reporteRango.total_ninos_atendidos, reporteComparar.total_ninos_atendidos)
       addRow('Total comidas', reporteRango.total_asistencias, reporteComparar.total_asistencias)
@@ -564,19 +568,19 @@ export default function Reporte() {
                     <div className="label">Total comidas</div>
                   </div>
                   <div className="reporte-item">
-                    <div className="valor">${periodicidad.costo_total.toFixed(2)}</div>
+                    <div className="valor">$${fmt(periodicidad.costo_total)}</div>
                     <div className="label">Costo total</div>
                   </div>
                   <div className="reporte-item">
-                    <div className="valor">${periodicidad.costo_por_nino.toFixed(2)}</div>
+                    <div className="valor">$${fmt(periodicidad.costo_por_nino)}</div>
                     <div className="label">Costo por niño</div>
                   </div>
                   <div className="reporte-item">
-                    <div className="valor">${periodicidad.costo_por_comida.toFixed(2)}</div>
+                    <div className="valor">$${fmt(periodicidad.costo_por_comida)}</div>
                     <div className="label">Costo por comida</div>
                   </div>
                   <div className="reporte-item">
-                    <div className="valor" style={{ color: 'var(--success)' }}>${periodicidad.donativos_periodo.toFixed(2)}</div>
+                    <div className="valor" style={{ color: 'var(--success)' }}>$${fmt(periodicidad.donativos_periodo)}</div>
                     <div className="label">Donativos del período</div>
                   </div>
                 </div>
@@ -615,7 +619,7 @@ export default function Reporte() {
                       <div className="label">Promedio diario</div>
                     </div>
                     <div className="reporte-item">
-                      <div className="valor" style={{ color: 'var(--success)' }}>${reporteRango.donativos_periodo.toFixed(2)}</div>
+                      <div className="valor" style={{ color: 'var(--success)' }}>$${fmt(reporteRango.donativos_periodo)}</div>
                       <div className="label">Donativos del período</div>
                     </div>
                   </div>
@@ -647,10 +651,10 @@ export default function Reporte() {
                               return (
                                 <tr key={item.label}>
                                   <td><strong>{item.label}</strong></td>
-                                  <td>{item.esDinero ? `$${item.actual.toFixed(2)}` : item.actual}</td>
-                                  <td>{item.esDinero ? `$${item.anterior.toFixed(2)}` : item.anterior}</td>
+                                  <td>{item.esDinero ? `$${fmt(item.actual)}` : fmtInt(item.actual)}</td>
+                                  <td>{item.esDinero ? `$${fmt(item.anterior)}` : fmtInt(item.anterior)}</td>
                                   <td style={{ color, fontWeight: 600 }}>
-                                    {diff > 0 ? '+' : ''}{item.esDinero ? `$${diff.toFixed(2)}` : diff} ({pct}%)
+                                    {diff > 0 ? '+' : ''}{item.esDinero ? `$${fmt(diff)}` : fmtInt(diff)} ({pct}%)
                                   </td>
                                 </tr>
                               )
