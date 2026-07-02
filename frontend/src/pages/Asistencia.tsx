@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import api from '../api'
 import ScannerModal from '../components/ScannerModal'
 
@@ -9,6 +10,7 @@ interface Nino {
 }
 
 export default function Asistencia() {
+  const navigate = useNavigate()
   const [ninos, setNinos] = useState<Nino[]>([])
   const [asistieronHoy, setAsistieronHoy] = useState<Set<number>>(new Set())
   const [loadingId, setLoadingId] = useState<number | null>(null)
@@ -147,15 +149,28 @@ export default function Asistencia() {
           {ninos.map((nino) => {
             const yaAsistio = asistieronHoy.has(nino.id)
             return (
-              <button
+              <div
                 key={nino.id}
                 className={`nino-card ${yaAsistio ? 'asistio' : ''} ${loadingId === nino.id ? 'loading' : ''}`}
-                onClick={() => registrarAsistencia(nino.id)}
-                disabled={yaAsistio || loadingId !== null}
               >
-                {yaAsistio && <span className="checkmark">✓</span>}
-                <span className="nino-nombre">{nino.nombre} {nino.apellido}</span>
-              </button>
+                <button
+                  className="nino-card-main"
+                  onClick={() => registrarAsistencia(nino.id)}
+                  disabled={yaAsistio || loadingId !== null}
+                >
+                  {yaAsistio && <span className="checkmark">✓</span>}
+                  <span className="nino-nombre">{nino.nombre} {nino.apellido}</span>
+                </button>
+                <button
+                  className="nino-card-perfil"
+                  onClick={(e) => { e.stopPropagation(); navigate(`/ninos/${nino.id}`) }}
+                  title="Ver perfil"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="3"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
+                  </svg>
+                </button>
+              </div>
             )
           })}
         </div>

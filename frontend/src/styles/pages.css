@@ -40,21 +40,56 @@
   background: var(--bg-card);
   border: 2px solid var(--border-color);
   border-radius: var(--radius-lg);
-  padding: 1.35rem 1rem;
   text-align: center;
-  cursor: pointer;
   transition: all var(--transition);
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: var(--gray-700);
+  display: flex;
+  align-items: stretch;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.nino-card-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1.35rem 0.5rem;
+  border: none;
+  background: none;
+  cursor: pointer;
   font-size: 0.9rem;
   font-weight: 500;
   font-family: inherit;
   color: var(--gray-700);
+  transition: all var(--transition);
+}
+
+.nino-card-main:disabled {
+  cursor: default;
+}
+
+.nino-card-perfil {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  box-shadow: var(--shadow-sm);
-  position: relative;
-  overflow: hidden;
+  justify-content: center;
+  padding: 0 0.6rem;
+  border: none;
+  border-left: 2px solid var(--border-color);
+  background: none;
+  cursor: pointer;
+  color: var(--gray-400);
+  transition: all var(--transition);
+}
+
+.nino-card-perfil:hover {
+  color: var(--primary);
+  background: var(--gray-50);
 }
 
 .nino-card::before {
@@ -64,26 +99,26 @@
   background: linear-gradient(135deg, var(--primary-lightest), transparent);
   opacity: 0;
   transition: opacity var(--transition);
+  pointer-events: none;
 }
 
-.nino-card:hover:not(.asistio):not(:disabled) {
+.nino-card:hover:not(.asistio) {
   border-color: var(--primary);
   transform: translateY(-3px);
   box-shadow: var(--shadow-md);
 }
 
-.nino-card:hover:not(.asistio):not(:disabled)::before {
+.nino-card:hover:not(.asistio)::before {
   opacity: 1;
 }
 
-.nino-card:active:not(.asistio):not(:disabled) {
+.nino-card:active:not(.asistio) .nino-card-main:not(:disabled) {
   transform: translateY(-1px);
 }
 
 .nino-card.asistio {
   background: linear-gradient(135deg, var(--success-bg) 0%, rgba(22,163,74,0.08) 100%);
   border-color: var(--success);
-  cursor: default;
   box-shadow: 0 2px 8px rgba(22, 163, 74, 0.15);
 }
 
@@ -91,10 +126,6 @@
   opacity: 0.5;
   pointer-events: none;
   transform: scale(0.97);
-}
-
-.nino-card:disabled {
-  cursor: default;
 }
 
 .nino-card .checkmark {
@@ -109,6 +140,7 @@
   font-size: 0.85rem;
   font-weight: 700;
   margin-bottom: 0.25rem;
+  flex-shrink: 0;
 }
 
 .nino-card .nino-nombre {
