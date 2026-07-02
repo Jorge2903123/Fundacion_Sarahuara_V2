@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api'
+import { useAuth } from '../context/AuthContext'
 import ScannerModal from '../components/ScannerModal'
 
 interface Nino {
@@ -11,6 +12,8 @@ interface Nino {
 
 export default function Asistencia() {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const esVoluntario = user?.rol === 'voluntario'
   const [ninos, setNinos] = useState<Nino[]>([])
   const [asistieronHoy, setAsistieronHoy] = useState<Set<number>>(new Set())
   const [loadingId, setLoadingId] = useState<number | null>(null)
@@ -161,16 +164,18 @@ export default function Asistencia() {
                   {yaAsistio && <span className="checkmark">✓</span>}
                   <span className="nino-nombre">{nino.nombre} {nino.apellido}</span>
                 </button>
-                <button
-                  className="nino-card-perfil"
-                  onClick={(e) => { e.stopPropagation(); navigate(`/ninos/${nino.id}`) }}
-                  title="Ver alergias y perfil"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
-                  </svg>
-                </button>
+                {esVoluntario && (
+                  <button
+                    className="nino-card-perfil"
+                    onClick={(e) => { e.stopPropagation(); navigate(`/ninos/${nino.id}`) }}
+                    title="Ver alergias y perfil"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                      <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                  </button>
+                )}
               </div>
             )
           })}

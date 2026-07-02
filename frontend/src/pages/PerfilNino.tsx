@@ -15,6 +15,7 @@ interface HistorialData {
   total_asistencias: number
   asistencias_este_mes: number
   ultimas_10_fechas: string[]
+  ausencias_recientes: string[]
 }
 
 export default function PerfilNino() {
@@ -124,7 +125,25 @@ export default function PerfilNino() {
           <ul className="fechas-lista">
             {historial.ultimas_10_fechas.map((f, i) => (
               <li key={i} className="fechas-item">
-                <span className="fechas-dot" />
+                <span className="fechas-dot fechas-dot--success" />
+                <span>
+                  {new Date(f + 'T12:00:00').toLocaleDateString('es-MX', {
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+                  })}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {historial && historial.ausencias_recientes.length > 0 && (
+        <div className="card" style={{ marginTop: '1rem' }}>
+          <h3 className="section-title">Últimas inasistencias</h3>
+          <ul className="fechas-lista">
+            {historial.ausencias_recientes.map((f, i) => (
+              <li key={i} className="fechas-item">
+                <span className="fechas-dot fechas-dot--danger" />
                 <span>
                   {new Date(f + 'T12:00:00').toLocaleDateString('es-MX', {
                     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',

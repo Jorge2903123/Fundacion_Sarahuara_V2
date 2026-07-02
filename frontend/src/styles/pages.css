@@ -407,8 +407,16 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--primary-lighter);
+  background: var(--primary);
   flex-shrink: 0;
+}
+
+.fechas-dot--success {
+  background: var(--success);
+}
+
+.fechas-dot--danger {
+  background: var(--danger);
 }
 
 /* Reporte */
