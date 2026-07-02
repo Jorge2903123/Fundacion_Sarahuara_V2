@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import jsPDF from 'jspdf'
-import html2canvas from 'html2canvas'
+import 'jspdf-autotable'
 import api from '../api'
 
 interface Mes {
@@ -132,77 +132,243 @@ export default function Reporte() {
   }
 
   const exportarPDF = async () => {
-    if (!reporteRef.current) return
     setExportando(true)
     try {
-      const canvas = await html2canvas(reporteRef.current, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-      })
-      const imgData = canvas.toDataURL('image/png')
       const pdf = new jsPDF('p', 'mm', 'a4')
-      const pageWidth = pdf.internal.pageSize.getWidth()
-      const imgWidth = pageWidth - 20
-      const imgHeight = (canvas.height * imgWidth) / canvas.width
-      let heightLeft = imgHeight
-      let position = 10
+      const pw = pdf.internal.pageSize.getWidth()
+      const ph = pdf.internal.pageSize.getHeight()
+      const m = 20
+      let y = m
 
-      pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight)
-      heightLeft -= pdf.internal.pageSize.getHeight() - 20
+      // --- helper ---
+      const addFooter = () => {
+        pdf.setFontSize(8)
+        pdf.setTextColor(160)
+        pdf.text(
+          `Fundación Sarahuaro · Reporte de Impacto · Página ${pdf.internal.getNumberOfPages()}`,
+          pw / 2, ph - 12, { align: 'center' },
+        )
+      }
 
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight + 10
-        pdf.addPage()
-        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight)
-        heightLeft -= pdf.internal.pageSize.getHeight() - 20
+      // --- logo ---
+      try {
+        const resp = await fetch('/sarahuaro-logo.jpg')
+        const blob = await resp.blob()
+        const dataUrl = await new Promise<string>((resolve) => {
+          const r = new FileReader()
+          r.onload = () => resolve(r.result as string)
+          r.readAsDataURL(blob)
+        })
+        pdf.addImage(dataUrl, 'JPEG', m, y - 2, 14, 14)
+        pdf.setFontSize(18)
+        pdf.setTextColor(230, 126, 34)
+        pdf.text('Fundación Sarahuaro', 40, y + 4)
+      } catch {
+        pdf.setFontSize(18)
+        pdf.setTextColor(230, 126, 34)
+        pdf.text('Fundación Sarahuaro', m, y + 4)
+      }
+
+      // --- title ---
+      pdf.setFontSize(13)
+      pdf.setTextColor(80)
+      const titleY = 22
+      pdf.text('Reporte de Impacto', m, titleY)
+
+      // --- divider ---
+      y = titleY + 4
+      pdf.setDrawColor(230, 126, 34)
+      pdf.setLineWidth(0.4)
+      pdf.line(m, y, pw - m, y)
+
+      // --- period & date ---
+      y += 7
+      pdf.setFontSize(9)
+      pdf.setTextColor(100)
+      if (reporte) {
+        const nm = meses.find((mm) => mm.value === reporte.mes)?.label
+        pdf.text(`Período: ${nm} ${reporte.anio}`, m, y)
+      } else if (reporteRango) {
+        const f1 = new Date(reporteRango.inicio + 'T12:00:00').toLocaleDateString('es-MX')
+        const f2 = new Date(reporteRango.fin + 'T12:00:00').toLocaleDateString('es-MX')
+        pdf.text(`Período: ${f1} al ${f2}`, m, y)
+      }
+      y += 4
+      pdf.text(`Generado: ${new Date().toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`, m, y)
+
+      // --- metrics ---
+      const data = reporte || reporteRango
+      if (data && (data.total_ninos_atendidos > 0 || data.total_asistencias > 0)) {
+        y += 12
+        const metrics: { label: string; value: string; color: string }[] = []
+        metrics.push({ label: 'Niños atendidos', value: String(data.total_ninos_atendidos), color: '#e67e22' })
+        metrics.push({ label: 'Total comidas', value: String(data.total_asistencias), color: '#2ecc71' })
+        if ('costo_total' in data) {
+          metrics.push({ label: 'Costo total', value: `$${(data as any).costo_total.toFixed(2)}`, color: '#e74c3c' })
+          metrics.push({ label: 'Costo por niño', value: `$${(data as any).costo_por_nino.toFixed(2)}`, color: '#3498db' })
+          metrics.push({ label: 'Costo por comida', value: `$${(data as any).costo_por_comida.toFixed(2)}`, color: '#9b59b6' })
+        }
+        if ('promedio_diario' in data) {
+          metrics.push({ label: 'Promedio diario', value: String((data as any).promedio_diario), color: '#1abc9c' })
+          metrics.push({ label: 'Días laborales', value: String((data as any).dias_laborales), color: '#34495e' })
+          metrics.push({ label: 'Días del período', value: String((data as any).dias_transcurridos), color: '#7f8c8d' })
+        }
+        metrics.push({ label: 'Donativos del período', value: `$${data.donativos_periodo.toFixed(2)}`, color: '#27ae60' })
+
+        // draw metric cards in 2-column grid
+        const cardW = (pw - m * 2 - 6) / 2
+        const cardH = 22
+        const gapX = 6
+        const gapY = 5
+
+        for (let i = 0; i < metrics.length; i++) {
+          const col = i % 2
+          const row = Math.floor(i / 2)
+          const cx = m + col * (cardW + gapX)
+          const cy = y + row * (cardH + gapY)
+
+          // card bg
+          pdf.setFillColor(248, 248, 248)
+          pdf.setDrawColor(220, 220, 220)
+          pdf.roundedRect(cx, cy, cardW, cardH, 2, 2, 'FD')
+
+          // left accent bar
+          pdf.setFillColor(metrics[i].color)
+          pdf.rect(cx, cy, 3, cardH, 'F')
+
+          // value
+          pdf.setFontSize(16)
+          pdf.setTextColor(50)
+          pdf.text(metrics[i].value, cx + 10, cy + 16)
+
+          // label
+          pdf.setFontSize(8)
+          pdf.setTextColor(140)
+          pdf.text(metrics[i].label, cx + 10, cy + 8)
+        }
+
+        // --- comparison table ---
+        if (comparar && reporteComparar) {
+          const tableY = y + Math.ceil(metrics.length / 2) * (cardH + gapY) + 10
+          const f1a = new Date(reporteComparar.inicio + 'T12:00:00').toLocaleDateString('es-MX')
+          const f2a = new Date(reporteComparar.fin + 'T12:00:00').toLocaleDateString('es-MX')
+
+          ;(pdf as any).autoTable({
+            startY: tableY,
+            head: [['Indicador', 'Período actual', `Período anterior\n(${f1a} - ${f2a})`, 'Cambio']],
+            body: [
+              ['Niños atendidos', String(reporteRango.total_ninos_atendidos), String(reporteComparar.total_ninos_atendidos), formatDiff(reporteRango.total_ninos_atendidos, reporteComparar.total_ninos_atendidos)],
+              ['Total comidas', String(reporteRango.total_asistencias), String(reporteComparar.total_asistencias), formatDiff(reporteRango.total_asistencias, reporteComparar.total_asistencias)],
+              ['Donativos', `$${reporteRango.donativos_periodo.toFixed(2)}`, `$${reporteComparar.donativos_periodo.toFixed(2)}`, formatDiff(reporteRango.donativos_periodo, reporteComparar.donativos_periodo, true)],
+            ],
+            theme: 'grid',
+            headStyles: { fillColor: [230, 126, 34], textColor: 255, fontSize: 9, fontStyle: 'bold' },
+            bodyStyles: { fontSize: 9, textColor: 60 },
+            alternateRowStyles: { fillColor: [248, 248, 248] },
+            margin: { top: 20, right: m, bottom: 20, left: m },
+            tableLineColor: [200, 200, 200],
+            tableLineWidth: 0.1,
+          })
+        }
+      } else {
+        y += 12
+        pdf.setFontSize(11)
+        pdf.setTextColor(150)
+        pdf.text('No hay datos de asistencia para este período', m, y)
+      }
+
+      // --- footer on all pages ---
+      const totalPages = (pdf as any).internal.getNumberOfPages()
+      for (let i = 1; i <= totalPages; i++) {
+        pdf.setPage(i)
+        addFooter()
       }
 
       const nombreMes = modo === 'mensual' && reporte
-        ? meses.find((m) => m.value === reporte.mes)?.label
+        ? meses.find((mm) => mm.value === reporte.mes)?.label
         : `${inicio}_a_${fin}`
 
       pdf.save(`reporte_${nombreMes}_${anio}.pdf`)
-    } catch {
+    } catch (err) {
       setError('Error al exportar PDF')
     } finally {
       setExportando(false)
     }
   }
 
+  function formatDiff(actual: number, anterior: number, esDinero = false): string {
+    const diff = actual - anterior
+    const pct = anterior > 0 ? ((diff / anterior) * 100).toFixed(1) : '+∞'
+    const signo = diff > 0 ? '+' : ''
+    return esDinero
+      ? `${signo}$${diff.toFixed(2)} (${pct}%)`
+      : `${signo}${diff} (${pct}%)`
+  }
+
   const exportarCSV = () => {
     const data = reporte || reporteRango
     if (!data) return
-    const filas: string[][] = [['Indicador', 'Valor']]
+
+    const esc = (v: string) => `"${v.replace(/"/g, '""')}"`
+    const lines: string[] = []
+    lines.push('Fundación Sarahuaro,Reporte de Impacto')
+    lines.push(`Generado,${new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}`)
+    lines.push('')
 
     if ('mes' in data) {
-      const nombreMes = meses.find((m) => m.value === data.mes)?.label
-      filas.push(['Mes', nombreMes ?? ''])
-      filas.push(['Año', String(data.anio)])
+      const nm = meses.find((m) => m.value === data.mes)?.label
+      lines.push(`Período,${esc(`${nm} ${data.anio}`)}`)
     } else {
-      filas.push(['Período inicio', data.inicio])
-      filas.push(['Período fin', data.fin])
+      lines.push(`Fecha inicio,${data.inicio}`)
+      lines.push(`Fecha fin,${data.fin}`)
     }
-    filas.push(['Niños atendidos', String(data.total_ninos_atendidos)])
-    filas.push(['Total comidas', String(data.total_asistencias)])
+    lines.push('')
+
+    lines.push('Indicador,Valor')
+    lines.push(`Niños atendidos,${data.total_ninos_atendidos}`)
+    lines.push(`Total comidas,${data.total_asistencias}`)
     if ('promedio_diario' in data) {
-      filas.push(['Promedio diario', String((data as ReporteRango).promedio_diario)])
+      lines.push(`Promedio diario,${(data as ReporteRango).promedio_diario}`)
+      lines.push(`Días laborales,${(data as ReporteRango).dias_laborales}`)
+      lines.push(`Días del período,${(data as ReporteRango).dias_transcurridos}`)
     }
     if ('costo_total' in data) {
-      filas.push(['Costo total', (data as ReporteData).costo_total.toFixed(2)])
-      filas.push(['Costo por niño', (data as ReporteData).costo_por_nino.toFixed(2)])
-      filas.push(['Costo por comida', (data as ReporteData).costo_por_comida.toFixed(2)])
+      lines.push('')
+      lines.push(',,,Costos')
+      lines.push(`Costo total,$${(data as ReporteData).costo_total.toFixed(2)}`)
+      lines.push(`Costo por niño,$${(data as ReporteData).costo_por_nino.toFixed(2)}`)
+      lines.push(`Costo por comida,$${(data as ReporteData).costo_por_comida.toFixed(2)}`)
     }
-    filas.push(['Donativos del período', data.donativos_periodo.toFixed(2)])
+    lines.push('')
+    lines.push(`Donativos del período,$${data.donativos_periodo.toFixed(2)}`)
 
-    const csv = filas.map((f) => f.join(',')).join('\n')
+    if (comparar && reporteComparar) {
+      lines.push('')
+      lines.push(',,,Comparación con período anterior')
+      lines.push('Indicador,Actual,Anterior,Cambio')
+      const addRow = (label: string, actual: number, anterior: number, esDinero = false) => {
+        const diff = actual - anterior
+        const pct = anterior > 0 ? ((diff / anterior) * 100).toFixed(1) : '+∞'
+        const signo = diff > 0 ? '+' : ''
+        const fmtActual = esDinero ? `$${actual.toFixed(2)}` : String(actual)
+        const fmtAnt = esDinero ? `$${anterior.toFixed(2)}` : String(anterior)
+        const fmtDiff = esDinero ? `${signo}$${diff.toFixed(2)} (${pct}%)` : `${signo}${diff} (${pct}%)`
+        lines.push(`${esc(label)},${fmtActual},${fmtAnt},${fmtDiff}`)
+      }
+      addRow('Niños atendidos', reporteRango.total_ninos_atendidos, reporteComparar.total_ninos_atendidos)
+      addRow('Total comidas', reporteRango.total_asistencias, reporteComparar.total_asistencias)
+      addRow('Donativos', reporteRango.donativos_periodo, reporteComparar.donativos_periodo, true)
+    }
+
+    const bom = '\uFEFF'
+    const csv = bom + lines.join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
 
     if ('mes' in data) {
-      const nombreMes = meses.find((m) => m.value === data.mes)?.label
-      link.download = `reporte_${nombreMes}_${data.anio}.csv`
+      const nm = meses.find((m) => m.value === data.mes)?.label
+      link.download = `reporte_${nm}_${data.anio}.csv`
     } else {
       link.download = `reporte_${inicio}_a_${fin}.csv`
     }

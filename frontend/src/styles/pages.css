@@ -471,3 +471,16 @@
   gap: 0.75rem;
   margin-bottom: 0.5rem;
 }
+
+/* --- Print styles --- */
+@media print {
+  body { background: #fff !important; }
+  .navbar, .navbar-hamburger, .navbar-overlay, .toast-container,
+  .btn, .form-group, .status-msg, .navbar-hamburger { display: none !important; }
+  .main-content { margin-left: 0 !important; padding: 0.5in !important; }
+  .app-layout { display: block !important; }
+  .reporte-resultados { break-inside: avoid; }
+  .reporte-item { box-shadow: none; border: 1px solid #ddd; }
+  .page-title { font-size: 20pt; margin-bottom: 4pt; }
+  .section-title { font-size: 12pt; }
+}
